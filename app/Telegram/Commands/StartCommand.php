@@ -3,10 +3,13 @@
 namespace App\Telegram\Commands;
 
 use App\Services\Referral\ReferralService;
+use App\Services\Setting\SettingService;
+use App\Services\Telegram\MessageLifecycleService;
 use App\Services\Telegram\TelegramService;
 use App\Services\Telegram\TelegramUserService;
 use App\Telegram\DTO\TelegramUpdate;
-use App\Services\Setting\SettingService;
+use App\Telegram\UI\Keyboards;
+use App\Telegram\UI\Messages;
 
 class StartCommand implements CommandInterface
 {
@@ -15,6 +18,7 @@ class StartCommand implements CommandInterface
         private TelegramUserService $telegramUserService,
         private ReferralService $referralService,
         private SettingService $settingService,
+        private MessageLifecycleService $messageLifecycleService,
     ) {
     }
 
@@ -32,70 +36,94 @@ class StartCommand implements CommandInterface
 
         $referralCode = $parts[1] ?? null;
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create / Update User
+        |--------------------------------------------------------------------------
+        */
+
         $user = $this->telegramUserService->createOrUpdate(
             $telegramMessage['from'],
             $referralCode
         );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Register Referral
+        |--------------------------------------------------------------------------
+        */
+
         if ($referralCode) {
 
-            $referrer = $this->referralService->findReferrer($referralCode);
+            $referrer = $this->referralService->findReferrer(
+                $referralCode
+            );
 
-            if ($referrer) {
 
+            if (
+                $referrer &&
+                $referrer->id !== $user->id &&
+                ! $user->referred_by_user_id
+            ) {
+
+
+                /*
+                 * ذخیره والد مستقیم در User
+                 */
+                $user->update([
+
+                    'referred_by_user_id' => $referrer->id,
+
+                ]);
+
+
+                /*
+                 * ساخت رکورد Referral
+                 */
                 $this->referralService->register(
+
                     $referrer,
+
                     $user
+
                 );
 
             }
+
         }
 
-        $botUsername = $this->settingService->get(
-            'telegram_bot_username',
-            config('telegram.bot_username')
+
+        /*
+        |--------------------------------------------------------------------------
+        | Replace Bot Message
+        |--------------------------------------------------------------------------
+        */
+
+        $this->messageLifecycleService->deleteLast(
+            $user
         );
 
-        $inviteLink = "https://t.me/{$botUsername}?start={$user->referral_code}";
 
-        $message = "سلام {$user->first_name} 👋
+        $this->messageLifecycleService->replace(
 
-حساب شما با موفقیت ثبت شد.
+            $user,
 
-🔗 لینک دعوت شما:
+            Messages::welcome($user),
 
-{$inviteLink}
+            Keyboards::welcome(
 
-کد دعوت شما:
+                $this->settingService->get(
 
-{$user->referral_code}
+                    'telegram_channel_url',
 
-📢 برای فعال شدن سیستم دعوت، ابتدا عضو کانال شوید و سپس روی دکمه «✅ عضو شدم» کلیک کنید.";
+                    config('telegram.channel_url')
 
-        $this->telegramService->sendMessage(
-            $update->chatId(),
-            $message,
-            [
-                'reply_markup' => json_encode([
-                    'inline_keyboard' => [
-                        [
-                            [
-                                'text' => '📢 عضویت در کانال',
-                                'url' => $this->settingService->get(
-                                    'telegram_channel_url',
-                                    config('telegram.channel_url')
-                                )
-                            ],
-                        ],
-                        [
-                            [
-                                'text' => '✅ عضو شدم',
-                                'callback_data' => 'check_membership',
-                            ],
-                        ],
-                    ],
-                ]),
-            ]
+                )
+
+            )
+
         );
     }
 }

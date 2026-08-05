@@ -5,24 +5,36 @@ namespace App\Telegram\Commands;
 use App\Models\User;
 use App\Services\Telegram\TelegramService;
 use App\Telegram\DTO\TelegramUpdate;
+use App\Telegram\InlineKeyboards\BackKeyboard;
+use App\Telegram\UI\PageRenderer;
+use App\Telegram\UI\Wallet\WalletPage;
 
 class WalletCommand implements CommandInterface
 {
     public function __construct(
         private TelegramService $telegramService,
+        private PageRenderer $pageRenderer,
     ) {
     }
 
     public function handle(TelegramUpdate $update): void
     {
-        $telegramId = $update->message()['from']['id'];
+        // پشتیبانی هم از Callback و هم Message
+        if ($update->callbackQuery()) {
 
-        $user = User::where(
-            'telegram_id',
-            $telegramId
-        )->first();
+            $telegramId = $update->callbackFrom()['id'];
 
-        if (!$user) {
+        } else {
+
+            $telegramId = $update->message()['from']['id'];
+
+        }
+
+        $user = User::with('wallet')
+            ->where('telegram_id', $telegramId)
+            ->first();
+
+        if (! $user) {
 
             $this->telegramService->sendMessage(
                 $update->chatId(),
@@ -32,17 +44,23 @@ class WalletCommand implements CommandInterface
             return;
         }
 
-        $this->telegramService->sendMessage(
-            $update->chatId(),
-            "💰 کیف پول شما
+        $wallet = $user->wallet;
 
-موجودی:
+        if (! $wallet) {
 
-{$user->wallet_balance}
+            $this->messageLifecycleService->replace(
+                $user,
+                'کیف پول شما هنوز ایجاد نشده است.',
+                BackKeyboard::make(),
+            );
 
-کد دعوت:
+            return;
+        }
 
-{$user->referral_code}"
+        $this->pageRenderer->render(
+            $user,
+            WalletPage::class,
+            $user,
         );
     }
 }

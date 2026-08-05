@@ -8,31 +8,59 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Referral extends Model
 {
     protected $fillable = [
+
         'referrer_id',
+
         'referred_id',
+
         'referral_code',
+
         'status',
+
         'verified_at',
+
         'rewarded_at',
+
     ];
 
     protected function casts(): array
     {
         return [
+
             'verified_at' => 'datetime',
+
             'rewarded_at' => 'datetime',
+
         ];
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
+
     public function referrer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'referrer_id');
+        return $this->belongsTo(
+            User::class,
+            'referrer_id'
+        );
     }
 
     public function referred(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'referred_id');
+        return $this->belongsTo(
+            User::class,
+            'referred_id'
+        );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function isPending(): bool
     {

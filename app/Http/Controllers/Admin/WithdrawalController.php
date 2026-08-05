@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessWithdrawalApproval;
 use App\Models\WithdrawalRequest;
 use App\Services\Withdrawal\WithdrawalService;
 use Illuminate\Http\Request;
@@ -52,7 +53,9 @@ class WithdrawalController extends Controller
 
     public function approve(WithdrawalRequest $withdrawal)
     {
-        $this->approvalService->approve($withdrawal);
+        ProcessWithdrawalApproval::dispatch(
+            $withdrawal
+        );
 
         return back()->with(
             'success',

@@ -8,20 +8,49 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class TelegramState extends Model
 {
     protected $fillable = [
+
         'user_id',
+
         'state',
+
         'data',
+
     ];
 
     protected function casts(): array
     {
         return [
+
             'data' => 'array',
+
         ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function clear(): void
+    {
+        $this->update([
+
+            'state' => null,
+
+            'data' => [],
+
+        ]);
     }
 }

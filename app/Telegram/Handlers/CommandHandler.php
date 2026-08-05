@@ -2,12 +2,15 @@
 
 namespace App\Telegram\Handlers;
 
+use App\Telegram\Commands\DepositCommand;
+use App\Telegram\Commands\HelpCommand;
 use App\Telegram\Commands\StartCommand;
 use App\Telegram\Commands\WalletCommand;
 use App\Telegram\DTO\TelegramUpdate;
 use App\Telegram\Commands\InviteCommand;
 use App\Telegram\Commands\MyAccountCommand;
 use App\Telegram\Commands\WithdrawalCommand;
+
 
 class CommandHandler
 {
@@ -18,6 +21,8 @@ class CommandHandler
         private InviteCommand $inviteCommand,
         private MyAccountCommand $myAccountCommand,
         private WithdrawalCommand $withdrawalCommand,
+        private DepositCommand $depositCommand,
+        private HelpCommand $helpCommand,
     ) {
     }
 
@@ -33,29 +38,51 @@ class CommandHandler
             return;
         }
 
-        if ($text === '/wallet' || $text === '💰 کیف پول') {
+        if ($text === '/wallet' || $text === '💰 Wallet') {
             $this->walletCommand->handle($update);
             return;
         }
+
         if (
             $text === '/invite' ||
-            $text === '👥 دعوت دوستان'
+            $text === '👥 Invite Friends'
         ) {
             $this->inviteCommand->handle($update);
             return;
         }
+
         if (
             $text === '/account' ||
-            $text === '📊 حساب من'
+            $text === '📊 My Account'
         ) {
+            \Log::info('ACCOUNT BUTTON CLICKED', [
+                'text' => $text,
+            ]);
             $this->myAccountCommand->handle($update);
             return;
         }
+
         if (
             $text === '/withdraw' ||
-            $text === '💸 برداشت'
+            $text === '💸 Withdraw'
         ) {
             $this->withdrawalCommand->handle($update);
+            return;
+        }
+
+        if (
+            $text === '/deposit' ||
+            $text === '💳 Deposit'
+        ) {
+            $this->depositCommand->handle($update);
+            return;
+        }
+
+        if (
+            $text === '/help' ||
+            $text === '❓ Help'
+        ) {
+            $this->helpCommand->handle($update);
             return;
         }
     }

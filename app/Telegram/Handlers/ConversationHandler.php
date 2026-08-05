@@ -3,15 +3,21 @@
 namespace App\Telegram\Handlers;
 
 use App\Models\User;
+use App\Services\Telegram\MessageLifecycleService;
 use App\Services\Telegram\TelegramService;
 use App\Services\Telegram\TelegramStateService;
+use App\Telegram\Conversations\DepositConversation;
+use App\Telegram\Conversations\WithdrawalConversation;
 use App\Telegram\DTO\TelegramUpdate;
 
 class ConversationHandler
 {
     public function __construct(
+        private WithdrawalConversation $withdrawalConversation,
+        private DepositConversation $depositConversation,
         private TelegramService $telegramService,
         private TelegramStateService $stateService,
+        private MessageLifecycleService $messageLifecycleService,
     ) {
     }
 
@@ -40,80 +46,16 @@ class ConversationHandler
             return false;
         }
 
-        switch ($state->state) {
+        return match (true) {
 
-            case 'withdraw_amount':
+            str_starts_with($state->state, 'withdraw')
+            => $this->withdrawalConversation->handle($update, $user, $state),
 
-                $amount = (float) $update->text();
+            str_starts_with($state->state, 'deposit')
+            => $this->depositConversation->handle($update, $user, $state),
 
-                if ($amount <= 0) {
-
-                    $this->telegramService->sendMessage(
-                        $update->chatId(),
-                        'مبلغ نامعتبر است.'
-                    );
-
-                    return true;
-                }
-
-                $this->stateService->set(
-                    $user,
-                    'withdraw_wallet',
-                    [
-                        'amount' => $amount,
-                    ]
-                );
-
-                $this->telegramService->sendMessage(
-                    $update->chatId(),
-                    'آدرس کیف پول خود را ارسال کنید.'
-                );
-
-                return true;
-
-            case 'withdraw_wallet':
-
-                $walletAddress = trim($update->text());
-
-                if (strlen($walletAddress) < 10) {
-
-                    $this->telegramService->sendMessage(
-                        $update->chatId(),
-                        'آدرس کیف پول معتبر نیست.'
-                    );
-
-                    return true;
-                }
-
-                $amount = $state->data['amount'];
-
-                $withdrawalService = app(
-                    \App\Services\Withdrawal\WithdrawalService::class
-                );
-
-                $withdrawalService->create(
-                    $user,
-                    $amount,
-                    $walletAddress
-                );
-
-                $this->stateService->clear($user);
-
-                $this->telegramService->sendMessage(
-                    $update->chatId(),
-                    "✅ درخواست برداشت شما ثبت شد.
-
-💰 مبلغ: {$amount}
-
-📍 آدرس:
-
-<code>{$walletAddress}</code>
-
-درخواست شما پس از بررسی توسط ادمین انجام خواهد شد."
-                );
-
-                return true;
-        }
+            default => false,
+        };
 
         return false;
     }

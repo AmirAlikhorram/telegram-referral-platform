@@ -5,9 +5,12 @@ namespace App\Telegram\Commands;
 use App\Models\Referral;
 use App\Models\User;
 use App\Services\Referral\ReferralVerificationService;
+use App\Services\Setting\SettingService;
+use App\Services\Telegram\MessageLifecycleService;
 use App\Services\Telegram\TelegramService;
 use App\Telegram\DTO\TelegramUpdate;
-use App\Services\Setting\SettingService;
+use App\Telegram\UI\Components\Alert;
+use App\Telegram\UI\Home\HomePage;
 
 class CheckMembershipCommand
 {
@@ -15,18 +18,18 @@ class CheckMembershipCommand
         private TelegramService $telegramService,
         private ReferralVerificationService $verificationService,
         private SettingService $settingService,
+        private MessageLifecycleService $messageLifecycleService,
     ) {
     }
 
     public function handle(TelegramUpdate $update): void
     {
         if ($update->callbackQueryId()) {
-
             $this->telegramService->answerCallbackQuery(
                 $update->callbackQueryId()
             );
-
         }
+
         $from = $update->callbackFrom();
 
         if (! $from) {
@@ -42,11 +45,25 @@ class CheckMembershipCommand
 
             $this->telegramService->sendMessage(
                 $update->chatId(),
-                'کاربر یافت نشد.'
+                Alert::error(
+                    'User Not Found',
+                    'Please restart the bot using /start.'
+                )
             );
 
             return;
         }
+
+        /**
+         * Loading UX
+         */
+        $this->messageLifecycleService->replace(
+            $user,
+            Alert::loading(
+                'Verifying Membership',
+                'Please wait while we verify your Telegram channel membership...'
+            )
+        );
 
         $response = $this->telegramService->getChatMember(
             $this->settingService->get(
@@ -55,13 +72,17 @@ class CheckMembershipCommand
             ),
             $user->telegram_id
         );
+
         \Log::info('CHAT MEMBER RESPONSE', $response);
 
         if (! isset($response['result']['status'])) {
 
-            $this->telegramService->sendMessage(
-                $update->chatId(),
-                'خطا در بررسی عضویت کانال.'
+            $this->messageLifecycleService->replace(
+                $user,
+                Alert::error(
+                    'Verification Failed',
+                    'Unable to verify your membership at the moment.'
+                )
             );
 
             return;
@@ -75,9 +96,12 @@ class CheckMembershipCommand
             'creator',
         ])) {
 
-            $this->telegramService->sendMessage(
-                $update->chatId(),
-                "❌ ابتدا عضو کانال شوید."
+            $this->messageLifecycleService->replace(
+                $user,
+                Alert::warning(
+                    'Channel Membership Required',
+                    "Please join our official Telegram channel first.\n\nAfter joining, press the verification button again."
+                )
             );
 
             return;
@@ -90,9 +114,18 @@ class CheckMembershipCommand
 
         if (! $referral) {
 
-            $this->telegramService->sendMessage(
-                $update->chatId(),
-                "✅ عضویت شما تایید شد."
+//            $this->telegramService->sendMessage(
+//                $user->telegram_id,
+//                Alert::success(
+//                    'Membership Verified',
+//                    'Welcome! Your account is now active.'
+//                )
+//            );
+
+            $this->messageLifecycleService->replace(
+                $user,
+                HomePage::render($user),
+
             );
 
             return;
@@ -100,31 +133,60 @@ class CheckMembershipCommand
 
         if ($referral->isRewarded()) {
 
-            $this->telegramService->sendMessage(
-                $update->chatId(),
-                "✅ قبلاً پاداش این دعوت ثبت شده است."
+//            $this->telegramService->sendMessage(
+//                $user->telegram_id,
+//                Alert::info(
+//                    'Already Verified',
+//                    'Your referral reward has already been processed.'
+//                )
+//            );
+
+            $this->messageLifecycleService->replace(
+                $user,
+                HomePage::render($user),
+
             );
 
             return;
         }
+
         \Log::info('VERIFY REFERRAL', [
             'user_id' => $user->id,
             'referral' => $referral,
         ]);
+
         $this->verificationService->verify($referral);
 
-        $this->telegramService->sendMessage(
-            $update->chatId(),
-            "🎉 عضویت شما تایید شد.
+        /**
+         * Welcome Notification
+         */
+//        $this->telegramService->sendMessage(
+//            $user->telegram_id,
+//            Alert::success(
+//                'Welcome!',
+//                'Your account has been activated successfully.'
+//            )
+//        );
+//        $this->messageLifecycleService->deleteLast($user);
 
-پاداش دعوت با موفقیت ثبت شد."
+        /**
+         * Dashboard
+         */
+        $this->messageLifecycleService->replace(
+            $user,
+            HomePage::render($user),
+
         );
 
+        /**
+         * Notify Referrer
+         */
         $this->telegramService->sendMessage(
             $referral->referrer->telegram_id,
-            "🎉 یک دعوت جدید تایید شد.
-
-💰 پاداش به کیف پول شما اضافه شد."
+            Alert::success(
+                'Referral Reward',
+                "A new referral has been verified.\n\nYour reward has been credited to your wallet."
+            )
         );
     }
 }

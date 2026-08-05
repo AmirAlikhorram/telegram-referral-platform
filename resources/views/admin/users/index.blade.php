@@ -84,7 +84,7 @@
 
                         <td>
 
-                            {{ number_format($user->wallet_balance,2) }}
+                            {{ number_format($user->wallet?->reward_balance,2) }}
 
                         </td>
 

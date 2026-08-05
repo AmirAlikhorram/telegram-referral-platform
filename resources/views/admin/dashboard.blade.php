@@ -170,7 +170,7 @@
 
                     <h2>
 
-                        {{ number_format($stats['wallet_balance'],2) }}
+                        {{ number_format($stats['total_reward_balance'],2) }}
 
                     </h2>
 

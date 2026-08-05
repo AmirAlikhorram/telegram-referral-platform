@@ -7,25 +7,54 @@ use Illuminate\Database\Eloquent\Model;
 class Setting extends Model
 {
     protected $fillable = [
+
         'key',
+
         'value',
+
     ];
 
-    public static function get(string $key, $default = null)
+    public $timestamps = false;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public static function get(string $key, mixed $default = null): mixed
     {
-        return static::where('key', $key)
+        return static::query()
+            ->where('key', $key)
             ->value('value') ?? $default;
     }
 
-    public static function set(string $key, $value): void
+    public static function set(string $key, mixed $value): self
     {
-        static::updateOrCreate(
+        return static::updateOrCreate(
+
             [
                 'key' => $key,
             ],
+
             [
                 'value' => $value,
             ]
+
         );
+    }
+
+    public static function has(string $key): bool
+    {
+        return static::query()
+            ->where('key', $key)
+            ->exists();
+    }
+
+    public static function remove(string $key): void
+    {
+        static::query()
+            ->where('key', $key)
+            ->delete();
     }
 }

@@ -12,11 +12,32 @@ return new class extends Migration
 
             $table->id();
 
-            $table->text('message');
+            $table->enum('target', [
+                'all',
+                'active',
+                'professional',
+            ]);
 
-            $table->integer('sent')->default(0);
+            $table->longText('message');
 
-            $table->integer('failed')->default(0);
+            $table->unsignedInteger('total')->default(0);
+
+            $table->unsignedInteger('success')->default(0);
+
+            $table->unsignedInteger('failed')->default(0);
+
+            $table->enum('status', [
+                'pending',
+                'sending',
+                'finished',
+                'failed',
+            ])->default('pending');
+
+            $table->foreignId('admin_id')->nullable()->constrained('users');
+
+            $table->timestamp('started_at')->nullable();
+
+            $table->timestamp('finished_at')->nullable();
 
             $table->timestamps();
 

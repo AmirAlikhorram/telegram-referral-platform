@@ -3,21 +3,31 @@
 namespace App\Telegram\Commands;
 
 use App\Models\User;
+use App\Services\Telegram\MessageLifecycleService;
 use App\Services\Telegram\TelegramService;
 use App\Services\Telegram\TelegramStateService;
 use App\Telegram\DTO\TelegramUpdate;
+use App\Telegram\UI\Withdraw\WithdrawalPage;
 
 class WithdrawalCommand implements CommandInterface
 {
     public function __construct(
         private TelegramService $telegramService,
         private TelegramStateService $stateService,
+        private MessageLifecycleService $messageLifecycleService,
     ) {
     }
 
     public function handle(TelegramUpdate $update): void
     {
-        $telegramId = $update->message()['from']['id'];
+        $from = $update->callbackFrom()
+            ?? ($update->message()['from'] ?? null);
+
+        if (! $from) {
+            return;
+        }
+
+        $telegramId = $from['id'];
 
         $user = User::where(
             'telegram_id',
@@ -28,22 +38,16 @@ class WithdrawalCommand implements CommandInterface
 
             $this->telegramService->sendMessage(
                 $update->chatId(),
-                'ابتدا /start را ارسال کنید.'
+                'Please send /start first.'
             );
 
             return;
         }
 
-        $this->stateService->set(
+        $this->messageLifecycleService->replace(
             $user,
-            'withdraw_amount'
-        );
-
-        $this->telegramService->sendMessage(
-            $update->chatId(),
-            "💸 درخواست برداشت
-
-مبلغ برداشت را وارد کنید."
+            WithdrawalPage::render(),
+            WithdrawalPage::keyboard(),
         );
     }
 }

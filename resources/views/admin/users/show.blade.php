@@ -2,110 +2,220 @@
 
 @section('content')
 
-    <div class="card">
+    <div class="container-fluid">
 
-        <div class="card-body">
+        <div class="row mb-4">
 
-            <h3>
+            <div class="col-md-12">
 
-                اطلاعات کاربر
+                <div class="card shadow-sm">
 
-            </h3>
+                    <div class="card-header d-flex justify-content-between align-items-center">
 
-            <hr>
+                        <h4 class="mb-0">
+                            پروفایل کاربر
+                        </h4>
 
-            <table class="table">
+                        <form method="POST"
+                              action="{{ route('admin.users.toggle-status',$user) }}">
 
-                <tr>
+                            @csrf
 
-                    <th>ID</th>
+                            <button class="btn btn-warning">
 
-                    <td>{{ $user->id }}</td>
+                                @if($user->status=='active')
+                                    مسدود کردن
+                                @else
+                                    فعال کردن
+                                @endif
 
-                </tr>
+                            </button>
 
-                <tr>
+                        </form>
 
-                    <th>نام</th>
+                    </div>
 
-                    <td>{{ $user->first_name }}</td>
+                    <div class="card-body">
 
-                </tr>
+                        <div class="row">
 
-                <tr>
+                            <div class="col-md-6">
 
-                    <th>نام کاربری</th>
+                                <table class="table table-bordered">
 
-                    <td>{{ '@'.$user->telegram_username }}</td>
+                                    <tr>
+                                        <th width="35%">ID</th>
+                                        <td>{{ $user->id }}</td>
+                                    </tr>
 
-                </tr>
+                                    <tr>
+                                        <th>نام</th>
+                                        <td>{{ $user->first_name }} {{ $user->last_name }}</td>
+                                    </tr>
 
-                <tr>
+                                    <tr>
+                                        <th>Username</th>
+                                        <td>{{ $user->telegram_username ? '@'.$user->telegram_username : '-' }}</td>
+                                    </tr>
 
-                    <th>Telegram ID</th>
+                                    <tr>
+                                        <th>Telegram ID</th>
+                                        <td>{{ $user->telegram_id }}</td>
+                                    </tr>
 
-                    <td>{{ $user->telegram_id }}</td>
+                                    <tr>
+                                        <th>Referral Code</th>
+                                        <td>{{ $user->referral_code }}</td>
+                                    </tr>
 
-                </tr>
+                                    <tr>
+                                        <th>معرف</th>
+                                        <td>
+                                            {{ $user->referrer?->first_name ?? '-' }}
+                                        </td>
+                                    </tr>
 
-                <tr>
+                                </table>
 
-                    <th>Referral Code</th>
+                            </div>
 
-                    <td>{{ $user->referral_code }}</td>
+                            <div class="col-md-6">
 
-                </tr>
+                                <table class="table table-bordered">
 
-                <tr>
+                                    <tr>
+                                        <th width="35%">سطح</th>
+                                        <td>{{ $user->level?->name ?? '-' }}</td>
+                                    </tr>
 
-                    <th>موجودی</th>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>{{ ucfirst($user->status) }}</td>
+                                    </tr>
 
-                    <td>
+                                    <tr>
+                                        <th>Professional</th>
+                                        <td>
+                                            {!! $user->isProfessional()
+                                                ? '<span class="badge bg-success">Yes</span>'
+                                                : '<span class="badge bg-secondary">No</span>' !!}
+                                        </td>
+                                    </tr>
 
-                        {{ number_format($user->wallet_balance,2) }}
+                                    <tr>
+                                        <th>Withdraw</th>
+                                        <td>
+                                            {!! $user->canWithdraw()
+                                                ? '<span class="badge bg-success">Enabled</span>'
+                                                : '<span class="badge bg-danger">Disabled</span>' !!}
+                                        </td>
+                                    </tr>
 
-                    </td>
+                                    <tr>
+                                        <th>Created</th>
+                                        <td>{{ $user->created_at }}</td>
+                                    </tr>
 
-                </tr>
+                                </table>
 
-                <tr>
+                            </div>
 
-                    <th>وضعیت</th>
+                        </div>
 
-                    <td>
+                    </div>
 
-                        {{ $user->status }}
+                </div>
 
-                    </td>
+            </div>
 
-                </tr>
+        </div>
 
-            </table>
+        <div class="row mb-4">
 
-            <form
-                method="POST"
-                action="{{ route('admin.users.toggle-status',$user) }}"
-            >
+            <div class="col-md-12">
 
-                @csrf
+                <div class="card shadow-sm">
 
-                <button
-                    class="btn btn-warning"
-                >
+                    <div class="card-header">
+                        کیف پول
+                    </div>
 
-                    @if($user->status=='active')
+                    <div class="card-body">
 
-                        مسدود کردن
+                        <div class="row text-center">
 
-                    @else
+                            <div class="col-md">
+                                <h6>Reward</h6>
+                                <h4>{{ number_format($user->wallet?->reward_balance ?? 0,8) }}</h4>
+                            </div>
 
-                        فعال کردن
+                            <div class="col-md">
+                                <h6>Withdrawable</h6>
+                                <h4>{{ number_format($user->wallet?->withdrawable_balance ?? 0,8) }}</h4>
+                            </div>
 
-                    @endif
+                            <div class="col-md">
+                                <h6>Locked</h6>
+                                <h4>{{ number_format($user->wallet?->locked_balance ?? 0,8) }}</h4>
+                            </div>
 
-                </button>
+                            <div class="col-md">
+                                <h6>Total Earned</h6>
+                                <h4>{{ number_format($user->wallet?->total_earned ?? 0,8) }}</h4>
+                            </div>
 
-            </form>
+                            <div class="col-md">
+                                <h6>Total Withdrawn</h6>
+                                <h4>{{ number_format($user->wallet?->total_withdrawn ?? 0,8) }}</h4>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="row mb-4">
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Deposits</h6>
+                        <h2>{{ $user->deposits->count() }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Withdrawals</h6>
+                        <h2>{{ $user->withdrawalRequests->count() }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Referrals</h6>
+                        <h2>{{ $user->referrals->count() }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6>Transactions</h6>
+                        <h2>{{ $user->wallet?->transactions->count() ?? 0 }}</h2>
+                    </div>
+                </div>
+            </div>
 
         </div>
 

@@ -3,31 +3,71 @@
 namespace App\Services\Setting;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 
 class SettingService
 {
-    protected array $cache = [];
+    /**
+     * دریافت مقدار تنظیم
+     */
+    public function get(
+        string $key,
+        mixed $default = null,
+    ): mixed {
 
-    public function get(string $key, $default = null)
-    {
-        if (array_key_exists($key, $this->cache)) {
-            return $this->cache[$key];
-        }
-
-        $value = Setting::where('key', $key)->value('value');
-
-        $this->cache[$key] = $value ?? $default;
-
-        return $this->cache[$key];
+        return Cache::rememberForever(
+            "setting:{$key}",
+            fn () => Setting::query()
+                ->where('key', $key)
+                ->value('value')
+                ?? $default,
+        );
     }
 
-    public function set(string $key, $value): void
-    {
+    /**
+     * ذخیره مقدار تنظیم
+     */
+    public function set(
+        string $key,
+        mixed $value,
+    ): void {
+
         Setting::updateOrCreate(
-            ['key' => $key],
-            ['value' => $value]
+            [
+                'key' => $key,
+            ],
+            [
+                'value' => $value,
+            ],
         );
 
-        $this->cache[$key] = $value;
+        Cache::forever(
+            "setting:{$key}",
+            $value,
+        );
+    }
+
+    /**
+     * حذف کش
+     */
+    public function forget(
+        string $key,
+    ): void {
+
+        Cache::forget(
+            "setting:{$key}",
+        );
+    }
+
+    /**
+     * بروزرسانی کش
+     */
+    public function refresh(
+        string $key,
+    ): mixed {
+
+        $this->forget($key);
+
+        return $this->get($key);
     }
 }

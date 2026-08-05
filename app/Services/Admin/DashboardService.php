@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Referral;
 use App\Models\WithdrawalRequest;
 use App\Models\WalletTransaction;
+use App\Models\Wallet;
 
 class DashboardService
 {
@@ -36,7 +37,11 @@ class DashboardService
 
             'wallet_transactions' => WalletTransaction::count(),
 
-            'wallet_balance' => User::sum('wallet_balance'),
+            'total_reward_balance' => Wallet::sum('reward_balance'),
+
+            'total_withdrawable_balance' => Wallet::sum('withdrawable_balance'),
+
+            'total_locked_balance' => Wallet::sum('locked_balance'),
 
         ];
     }

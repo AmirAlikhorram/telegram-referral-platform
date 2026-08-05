@@ -6,7 +6,7 @@ enum ReferralStatus: string
 {
     case Pending = 'pending';
 
-    case Completed = 'completed';
+    case Verified = 'verified';
 
     case Rewarded = 'rewarded';
 }

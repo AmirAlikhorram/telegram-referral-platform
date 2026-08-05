@@ -39,6 +39,15 @@ class UserController extends Controller
 
     public function show(User $user)
     {
+        $user->load([
+            'wallet.transactions',
+            'level',
+            'referrer',
+            'referrals',
+            'deposits',
+            'withdrawalRequests',
+        ]);
+
         return view(
             'admin.users.show',
             compact('user')
