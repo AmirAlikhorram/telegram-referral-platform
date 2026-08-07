@@ -1,4 +1,12 @@
 {
-    "platform": "laravel",
-    "php": "8.3"
+    "app": "referax",
+    "port": 3000,
+    "build": {
+        "location": "iran"
+    },
+    "disks": [],
+    "platform": {
+        "type": "laravel",
+        "php": "8.3"
+    }
 }
