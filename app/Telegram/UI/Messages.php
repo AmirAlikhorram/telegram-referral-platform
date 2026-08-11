@@ -29,13 +29,18 @@ With our platform you can:
 
 🎁 Unlock exclusive benefits
 
-━━━━━━━━━━━━━━━━━━
 
-📢 Before getting started, please join our official Telegram channel.
-
-After joining, tap <b>Verify Membership</b> below.
 
 ━━━━━━━━━━━━━━━━━━
+
+🚀 You can start using the platform now.
+
+Invite friends, earn rewards,
+manage your wallet and track your earnings.
+
+━━━━━━━━━━━━━━━━━━
+
+
 HTML;
     }
 }

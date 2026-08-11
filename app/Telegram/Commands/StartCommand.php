@@ -112,17 +112,7 @@ class StartCommand implements CommandInterface
 
             Messages::welcome($user),
 
-            Keyboards::welcome(
-
-                $this->settingService->get(
-
-                    'telegram_channel_url',
-
-                    config('telegram.channel_url')
-
-                )
-
-            )
+            Keyboards::welcome()
 
         );
     }
