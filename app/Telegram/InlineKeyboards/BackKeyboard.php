@@ -12,7 +12,7 @@ class BackKeyboard
 
                 [
                     [
-                        'text' => '⬅ بازگشت',
+                        'text' => '⬅ BACK',
                         'callback_data' => 'dashboard:home',
                     ],
                 ],
